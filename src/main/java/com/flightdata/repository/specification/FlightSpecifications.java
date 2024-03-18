@@ -9,25 +9,15 @@ public class FlightSpecifications {
 
     public static Specification<Flight> fromFilter(FlightFilter filter) {
         return (root, query, builder) -> {
-            Predicate predicate = builder.like(root.get("airline"), "%" + filter.getAirline() + "%");
-
-            if (!filter.getDepartureAirport().isEmpty()) {
-                predicate = builder.and(predicate, builder.like(root.get("departureAirport"),
-                        "%" + filter.getDepartureAirport().toUpperCase() + "%"));
-            }
-
-            if (!filter.getDestinationAirport().isEmpty()) {
-                predicate = builder.and(predicate, builder.like(root.get("destinationAirport"),
-                        "%" + filter.getDestinationAirport().toUpperCase() + "%"));
-            }
-
-            if (filter.getDepartureTime() != null) {
-                predicate = builder.and(predicate, builder.equal(root.get("departureTime"), filter.getDepartureTime()));
-            }
-
-            if (filter.getArrivalTime() != null) {
-                predicate = builder.and(predicate, builder.equal(root.get("arrivalTime"), filter.getArrivalTime()));
-            }
+            Predicate predicate = builder.equal(root.get("airline"), filter.getAirline());
+                predicate = builder.and(predicate, builder.equal(root.get("departureAirport"),
+                        filter.getDepartureAirport().toUpperCase()));
+                predicate = builder.and(predicate, builder.equal(root.get("destinationAirport"),
+                        filter.getDestinationAirport().toUpperCase()));
+                predicate = builder.and(predicate, builder.greaterThanOrEqualTo(root.get("departureTime"),
+                        filter.getDepartureTime()));
+                predicate = builder.and(predicate, builder.lessThanOrEqualTo(root.get("arrivalTime"),
+                        filter.getArrivalTime()));
 
             return predicate;
         };

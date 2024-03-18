@@ -14,13 +14,16 @@ import com.flightdata.repository.AirlineRepository;
 import com.flightdata.repository.FlightRepository;
 import com.flightdata.repository.specification.FlightSpecifications;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class FlightServiceImpl implements FlightService {
 
@@ -31,9 +34,31 @@ public class FlightServiceImpl implements FlightService {
 
     @Override
     public List<FlightResponseDTO> getAllFlights() {
-        return flightRepository.findAll().stream()
+
+        List<Flight> flights = flightRepository.findAll();
+
+        List<FlightFilter> flightsFilter = flights.stream()
+                .map(flight -> FlightFilter.builder()
+                        .airline(flight.getAirline())
+                        .departureAirport(flight.getDepartureAirport())
+                        .destinationAirport(flight.getDestinationAirport())
+                        .departureTime(flight.getDepartureTime())
+                        .arrivalTime(flight.getArrivalTime())
+                        .build())
+                .toList();
+
+        List<FlightResponseDTO> crazySupplierFlights = flightsFilter.stream()
+                .map(this::getCrazySupplierFlights)
+                .flatMap(Collection::stream)
+                .toList();
+
+        List<FlightResponseDTO> flightsData = new java.util.ArrayList<>(flightRepository.findAll().stream()
                 .map(flightMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList());
+
+        flightsData.addAll(crazySupplierFlights);
+
+        return flightsData;
     }
 
     @Override
@@ -85,9 +110,10 @@ public class FlightServiceImpl implements FlightService {
     @Override
     public List<FlightResponseDTO> searchFlights(FlightFilter filter) {
 
-        List<FlightResponseDTO> flights = flightRepository.findAll(FlightSpecifications.fromFilter(filter))
-                .stream().map(flightMapper::toDTO)
-                .collect(Collectors.toList());
+        List<FlightResponseDTO> flights =
+                flightRepository.findAll(FlightSpecifications.fromFilter(filter)).stream()
+                        .map(flightMapper::toDTO)
+                        .collect(Collectors.toList());
 
         List<FlightResponseDTO> crazySupplierFlights = getCrazySupplierFlights(filter);
 
