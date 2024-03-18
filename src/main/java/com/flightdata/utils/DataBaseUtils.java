@@ -1,6 +1,8 @@
 package com.flightdata.utils;
 
+import com.flightdata.model.Airline;
 import com.flightdata.model.Flight;
+import com.flightdata.repository.AirlineRepository;
 import com.flightdata.repository.FlightRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -13,12 +15,31 @@ import java.util.List;
 public class DataBaseUtils {
 
     @Bean
-    public CommandLineRunner loadData(FlightRepository repository) {
+    public CommandLineRunner loadData(FlightRepository repository, AirlineRepository airlineRepository) {
         List<Flight> flights = generateFlights();
+        List.of(Airline.builder()
+                        .name("American Airlines")
+                        .code("AAL")
+                        .build(),
+                Airline.builder()
+                        .name("United Airlines")
+                        .code("UAL")
+                        .build(),
+                Airline.builder()
+                        .name("Delta Airlines")
+                        .code("DAL")
+                        .build(),
+                Airline.builder()
+                        .name("Porter Airlines")
+                        .code("POE")
+                        .build())
+                .forEach(airlineRepository::save);
+
         return (args) -> flights.forEach(repository::save);
     }
 
     private static List<Flight> generateFlights() {
+
         return List.of(Flight.builder()
                         .airline("American Airlines")
                         .supplier("American Flights")
@@ -66,4 +87,6 @@ public class DataBaseUtils {
                         .build()
         );
     }
+
 }
+

@@ -1,17 +1,22 @@
 package com.flightdata.service;
 
+import com.flightdata.dto.CrazySupplierFlightResponseDTO;
+import com.flightdata.dto.CrazySupplierRequestDTO;
 import com.flightdata.dto.FlightRequestDTO;
 import com.flightdata.dto.FlightResponseDTO;
 import com.flightdata.exception.BusinessException;
 import com.flightdata.exception.FlightNotFoundException;
 import com.flightdata.filter.FlightFilter;
 import com.flightdata.mapper.FlightMapper;
+import com.flightdata.model.Airline;
 import com.flightdata.model.Flight;
+import com.flightdata.repository.AirlineRepository;
 import com.flightdata.repository.FlightRepository;
 import com.flightdata.repository.specification.FlightSpecifications;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +26,8 @@ public class FlightServiceImpl implements FlightService {
 
     private final FlightRepository flightRepository;
     private final FlightMapper flightMapper;
+    private final CrazySupplierService crazySupplierService;
+    private final AirlineRepository airlineRepository;
 
     @Override
     public List<FlightResponseDTO> getAllFlights() {
@@ -73,13 +80,52 @@ public class FlightServiceImpl implements FlightService {
         } else {
             throw new FlightNotFoundException("Flight Id: " + id + " not found");
         }
-
     }
 
     @Override
     public List<FlightResponseDTO> searchFlights(FlightFilter filter) {
-        return flightRepository.findAll(FlightSpecifications.fromFilter(filter))
+
+        List<FlightResponseDTO> flights = flightRepository.findAll(FlightSpecifications.fromFilter(filter))
                 .stream().map(flightMapper::toDTO)
                 .collect(Collectors.toList());
+
+        List<FlightResponseDTO> crazySupplierFlights = getCrazySupplierFlights(filter);
+
+        flights.addAll(crazySupplierFlights);
+
+        return flights;
     }
+
+    private List<FlightResponseDTO> getCrazySupplierFlights(FlightFilter filter) {
+        if (!filter.getAirline().isEmpty() && filter.getDepartureTime() != null && filter.getArrivalTime() != null) {
+
+            String airlineCode = airlineRepository.findByName(filter.getAirline())
+                    .map(Airline::getCode)
+                    .orElse(null);
+
+            CrazySupplierRequestDTO requestDTO = CrazySupplierRequestDTO.builder()
+                    .from(airlineCode)
+                    .to(airlineCode)
+                    .outboundDate(filter.getDepartureTime().toLocalDate())
+                    .inboundDate(filter.getArrivalTime().toLocalDate())
+                    .build();
+
+            List<CrazySupplierFlightResponseDTO> crazySupplierFlights = crazySupplierService.getCrazySupplierFlight(requestDTO);
+
+            return crazySupplierFlights.stream()
+                    .map(responseDTO -> FlightResponseDTO.builder()
+                            .airline(responseDTO.getCarrier())
+                            .supplier("Crazy Supplier")
+                            .fare(responseDTO.getBasePrice() + responseDTO.getTax())
+                            .departureAirport(responseDTO.getDepartureAirportName())
+                            .destinationAirport(responseDTO.getArrivalAirportName())
+                            .departureTime(responseDTO.getOutboundDateTime())
+                            .arrivalTime(responseDTO.getInboundDateTime())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+
 }
