@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class FlightDataExceptionHandler {
@@ -82,6 +83,6 @@ public class FlightDataExceptionHandler {
                         .field(error.getField())
                         .errorMessage(error.getDefaultMessage())
                         .build())
-                .toList();
+                .collect(Collectors.toList());
     }
 }

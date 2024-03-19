@@ -3,18 +3,14 @@ package com.flightdata.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class FlightRequestDTO {
-
-    private Long id;
 
     @NotBlank(message = "Airline name is required")
     private String airline;

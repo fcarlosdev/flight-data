@@ -45,16 +45,15 @@ public class FlightServiceImpl implements FlightService {
                         .departureTime(flight.getDepartureTime())
                         .arrivalTime(flight.getArrivalTime())
                         .build())
-                .toList();
+                .collect(Collectors.toList());
 
         List<FlightResponseDTO> crazySupplierFlights = flightsFilter.stream()
                 .map(this::getCrazySupplierFlights)
                 .flatMap(Collection::stream)
-                .toList();
+                .collect(Collectors.toList());
 
-        List<FlightResponseDTO> flightsData = new java.util.ArrayList<>(flightRepository.findAll().stream()
-                .map(flightMapper::toDTO)
-                .toList());
+        List<FlightResponseDTO> flightsData = flightRepository.findAll().stream()
+                .map(flightMapper::toDTO).collect(Collectors.toList());
 
         flightsData.addAll(crazySupplierFlights);
 
@@ -83,6 +82,7 @@ public class FlightServiceImpl implements FlightService {
             Flight flightToUpdate = flightRepository.findById(id)
                     .orElseThrow(() -> new FlightNotFoundException("Flight not found"));
 
+            flightToUpdate.setId(id);
             flightToUpdate.setAirline(flightRequestDTO.getAirline());
             flightToUpdate.setSupplier(flightRequestDTO.getSupplier());
             flightToUpdate.setFare(flightRequestDTO.getFare());
